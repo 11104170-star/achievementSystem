@@ -95,14 +95,38 @@ photo3 = st.file_uploader(
 )
 
 # =========================
+# 中文數字
+# =========================
+
+chinese_numbers = {
+    0: "零",
+    1: "一",
+    2: "二",
+    3: "三",
+    4: "四",
+    5: "五",
+    6: "六",
+    7: "七",
+    8: "八",
+    9: "九",
+    10: "十",
+    11: "十一",
+    12: "十二",
+    13: "十三",
+    14: "十四",
+    15: "十五",
+    16: "十六",
+    17: "十七",
+    18: "十八",
+    19: "十九",
+    20: "二十",
+}
+
+# =========================
 # 生成按鈕
 # =========================
 
 if st.button("生成成果書"):
-
-    # =========================
-    # 檢查檔案
-    # =========================
 
     if template_file is None:
 
@@ -270,8 +294,13 @@ if st.button("生成成果書"):
                     count / total * 100
                 )
 
+                count_text = chinese_numbers.get(
+                    count,
+                    str(count)
+                )
+
                 result.append(
-                    f"{count}人{score}分（{percent:.2f}%）"
+                    f"{count_text}人{score}分（{percent:.2f}%）"
                 )
 
             result_text += (
@@ -370,6 +399,10 @@ if st.button("生成成果書"):
 
     }
 
+    # =========================
+    # 替換表格文字
+    # =========================
+
     for table in doc.tables:
 
         for row in table.rows:
@@ -387,7 +420,6 @@ if st.button("生成成果書"):
                                 value
                             )
 
-                            # 設定字體
                             for run in para.runs:
 
                                 run.font.name = "標楷體"
@@ -429,10 +461,8 @@ if st.button("生成成果書"):
 
                         if key in para.text:
 
-                            para.text = para.text.replace(
-                                key,
-                                ""
-                            )
+                            # 清空原本 placeholder
+                            para.clear()
 
                             if image_file is not None:
 
