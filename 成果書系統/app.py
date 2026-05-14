@@ -194,6 +194,22 @@ if st.button("生成成果書"):
         st.stop()
 
     # =========================
+    # 刪除不需要欄位
+    # =========================
+
+    remove_columns = [
+        "請選擇今天社課名稱",
+        "學校",
+        "姓名："
+    ]
+
+    for col in remove_columns:
+
+        if col in df.columns:
+
+            df = df.drop(columns=[col])
+
+    # =========================
     # 問卷分析
     # =========================
 
@@ -241,7 +257,7 @@ if st.button("生成成果書"):
             text_questions.append(col)
 
     # =========================
-    # 生成分析文字
+    # 生成問卷分析
     # =========================
 
     result_text = ""
@@ -399,10 +415,6 @@ if st.button("生成成果書"):
 
     }
 
-    # =========================
-    # 替換表格文字
-    # =========================
-
     for table in doc.tables:
 
         for row in table.rows:
@@ -461,7 +473,6 @@ if st.button("生成成果書"):
 
                         if key in para.text:
 
-                            # 清空原本 placeholder
                             para.clear()
 
                             if image_file is not None:
