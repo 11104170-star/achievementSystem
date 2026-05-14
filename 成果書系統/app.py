@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 from collections import Counter
 from docx import Document
+from docx.shared import Inches, Pt
+from docx.oxml.ns import qn
 from io import BytesIO
 import os
 
 # =========================
-# 網頁標題
+# 網頁設定
 # =========================
 
 st.set_page_config(
@@ -37,18 +39,70 @@ excel_file = st.file_uploader(
 
 st.header("活動資訊")
 
+fill_date = st.text_input("填寫日期")
+
 activity_name = st.text_input("活動名稱")
+
 activity_date = st.text_input("活動日期")
+
 activity_place = st.text_input("活動地點")
+
 activity_people = st.text_input("參加人數")
+
 activity_leader = st.text_input("活動負責人")
+
 phone = st.text_input("連絡電話")
+
+activity_review = st.text_area("活動檢討")
+
+teacher_comment = st.text_area("指導老師評語")
+
+photo1_desc = st.text_input("照片1說明")
+
+photo2_desc = st.text_input("照片2說明")
+
+photo3_desc = st.text_input("照片3說明")
+
+# =========================
+# 上傳照片
+# =========================
+
+st.header("上傳照片")
+
+flow_photo = st.file_uploader(
+    "活動流程照片",
+    type=["jpg", "png", "jpeg"]
+)
+
+group_photo = st.file_uploader(
+    "大合照",
+    type=["jpg", "png", "jpeg"]
+)
+
+photo1 = st.file_uploader(
+    "照片1",
+    type=["jpg", "png", "jpeg"]
+)
+
+photo2 = st.file_uploader(
+    "照片2",
+    type=["jpg", "png", "jpeg"]
+)
+
+photo3 = st.file_uploader(
+    "照片3",
+    type=["jpg", "png", "jpeg"]
+)
 
 # =========================
 # 生成按鈕
 # =========================
 
 if st.button("生成成果書"):
+
+    # =========================
+    # 檢查檔案
+    # =========================
 
     if template_file is None:
 
@@ -57,7 +111,7 @@ if st.button("生成成果書"):
 
     if excel_file is None:
 
-        st.error("請上傳問卷")
+        st.error("請上傳問卷 Excel")
         st.stop()
 
     # =========================
@@ -120,11 +174,13 @@ if st.button("生成成果書"):
     # =========================
 
     rows = df.values.tolist()
+
     headers = list(df.columns)
 
     total = len(rows)
 
     score_questions = []
+
     text_questions = []
 
     for col in headers:
@@ -169,6 +225,10 @@ if st.button("生成成果書"):
     result_text += (
         f"填寫回饋表單人數：{total}人\n\n"
     )
+
+    # =========================
+    # 評分題
+    # =========================
 
     if len(score_questions) > 0:
 
@@ -276,21 +336,39 @@ if st.button("生成成果書"):
 
     doc = Document(template_file)
 
-    replace_map = {
-
-        "{{活動名稱}}": activity_name,
-        "{{活動日期}}": activity_date,
-        "{{活動地點}}": activity_place,
-        "{{參加人數}}": activity_people,
-        "{{活動負責人}}": activity_leader,
-        "{{連絡電話}}": phone,
-        "{{問卷分析結果}}": result_text,
-
-    }
-
     # =========================
     # 替換文字
     # =========================
+
+    replace_map = {
+
+        "{{填寫日期}}": fill_date,
+
+        "{{活動名稱}}": activity_name,
+
+        "{{活動日期}}": activity_date,
+
+        "{{活動地點}}": activity_place,
+
+        "{{參加人數}}": activity_people,
+
+        "{{活動負責人}}": activity_leader,
+
+        "{{連絡電話}}": phone,
+
+        "{{活動檢討}}": activity_review,
+
+        "{{指導老師評語}}": teacher_comment,
+
+        "{{照片1說明}}": photo1_desc,
+
+        "{{照片2說明}}": photo2_desc,
+
+        "{{照片3說明}}": photo3_desc,
+
+        "{{問卷分析結果}}": result_text,
+
+    }
 
     for table in doc.tables:
 
@@ -308,6 +386,62 @@ if st.button("生成成果書"):
                                 key,
                                 value
                             )
+
+                            # 設定字體
+                            for run in para.runs:
+
+                                run.font.name = "標楷體"
+
+                                run._element.rPr.rFonts.set(
+                                    qn("w:eastAsia"),
+                                    "標楷體"
+                                )
+
+                                run.font.size = Pt(11)
+
+    # =========================
+    # 插入圖片
+    # =========================
+
+    image_map = {
+
+        "{{活動流程照片}}": flow_photo,
+
+        "{{大合照}}": group_photo,
+
+        "{{照片1}}": photo1,
+
+        "{{照片2}}": photo2,
+
+        "{{照片3}}": photo3,
+
+    }
+
+    for table in doc.tables:
+
+        for row in table.rows:
+
+            for cell in row.cells:
+
+                for para in cell.paragraphs:
+
+                    for key, image_file in image_map.items():
+
+                        if key in para.text:
+
+                            para.text = para.text.replace(
+                                key,
+                                ""
+                            )
+
+                            if image_file is not None:
+
+                                run = para.add_run()
+
+                                run.add_picture(
+                                    image_file,
+                                    width=Inches(2.5)
+                                )
 
     # =========================
     # 輸出 Word
