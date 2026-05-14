@@ -8,7 +8,7 @@ from io import BytesIO
 import os
 
 # =========================
-# 網頁設定
+# 頁面設定
 # =========================
 
 st.set_page_config(
@@ -71,27 +71,27 @@ st.header("上傳照片")
 
 flow_photo = st.file_uploader(
     "活動流程照片",
-    type=["jpg", "png", "jpeg"]
+    type=["jpg", "jpeg", "png"]
 )
 
 group_photo = st.file_uploader(
     "大合照",
-    type=["jpg", "png", "jpeg"]
+    type=["jpg", "jpeg", "png"]
 )
 
 photo1 = st.file_uploader(
     "照片1",
-    type=["jpg", "png", "jpeg"]
+    type=["jpg", "jpeg", "png"]
 )
 
 photo2 = st.file_uploader(
     "照片2",
-    type=["jpg", "png", "jpeg"]
+    type=["jpg", "jpeg", "png"]
 )
 
 photo3 = st.file_uploader(
     "照片3",
-    type=["jpg", "png", "jpeg"]
+    type=["jpg", "jpeg", "png"]
 )
 
 # =========================
@@ -123,14 +123,115 @@ chinese_numbers = {
 }
 
 # =========================
+# 設定字型
+# =========================
+
+def set_font(paragraph):
+
+    for run in paragraph.runs:
+
+        run.font.name = "標楷體"
+
+        run._element.rPr.rFonts.set(
+            qn("w:eastAsia"),
+            "標楷體"
+        )
+
+        run.font.size = Pt(11)
+
+# =========================
+# 替換文字
+# =========================
+
+def replace_text(doc, replace_map):
+
+    # 正文
+    for para in doc.paragraphs:
+
+        for key, value in replace_map.items():
+
+            if key in para.text:
+
+                para.text = para.text.replace(
+                    key,
+                    value
+                )
+
+                set_font(para)
+
+    # 表格
+    for table in doc.tables:
+
+        for row in table.rows:
+
+            for cell in row.cells:
+
+                for para in cell.paragraphs:
+
+                    for key, value in replace_map.items():
+
+                        if key in para.text:
+
+                            para.text = para.text.replace(
+                                key,
+                                value
+                            )
+
+                            set_font(para)
+
+# =========================
+# 插入圖片
+# =========================
+
+def insert_images(doc, image_map):
+
+    # 正文
+    for para in doc.paragraphs:
+
+        for key, image_file in image_map.items():
+
+            if key in para.text:
+
+                para.text = ""
+
+                if image_file is not None:
+
+                    run = para.add_run()
+
+                    run.add_picture(
+                        image_file,
+                        width=Inches(2.5)
+                    )
+
+    # 表格
+    for table in doc.tables:
+
+        for row in table.rows:
+
+            for cell in row.cells:
+
+                for para in cell.paragraphs:
+
+                    for key, image_file in image_map.items():
+
+                        if key in para.text:
+
+                            para.text = ""
+
+                            if image_file is not None:
+
+                                run = para.add_run()
+
+                                run.add_picture(
+                                    image_file,
+                                    width=Inches(2.5)
+                                )
+
+# =========================
 # 生成成果書
 # =========================
 
 if st.button("生成成果書"):
-
-    # =========================
-    # 檢查檔案
-    # =========================
 
     if template_file is None:
 
@@ -193,7 +294,7 @@ if st.button("生成成果書"):
 
     except Exception as e:
 
-        st.error("讀取問卷失敗")
+        st.error("讀取檔案失敗")
         st.exception(e)
         st.stop()
 
@@ -217,17 +318,13 @@ if st.button("生成成果書"):
     # 問卷分析
     # =========================
 
-    rows = df.values.tolist()
-
-    headers = list(df.columns)
-
-    total = len(rows)
+    total = len(df)
 
     score_questions = []
 
     text_questions = []
 
-    for col in headers:
+    for col in df.columns:
 
         values = (
             df[col]
@@ -239,9 +336,7 @@ if st.button("生成成果書"):
 
         for v in values:
 
-            v = v.strip()
-
-            if v not in [
+            if v.strip() not in [
                 "1",
                 "2",
                 "3",
@@ -259,10 +354,6 @@ if st.button("生成成果書"):
         else:
 
             text_questions.append(col)
-
-    # =========================
-    # 生成問卷分析結果
-    # =========================
 
     result_text = ""
 
@@ -301,7 +392,7 @@ if st.button("生成成果書"):
                 f"{i}.{question}\n"
             )
 
-            result = []
+            temp = []
 
             for score in sorted(
                 counter.keys(),
@@ -319,12 +410,12 @@ if st.button("生成成果書"):
                     str(count)
                 )
 
-                result.append(
+                temp.append(
                     f"{count_text}人{score}分（{percent:.2f}%）"
                 )
 
             result_text += (
-                "、".join(result)
+                "、".join(temp)
             )
 
             result_text += "\n"
@@ -350,9 +441,7 @@ if st.button("生成成果書"):
 
         blank = 0
 
-        values = df[question]
-
-        for v in values:
+        for v in df[question]:
 
             if pd.isna(v):
 
@@ -419,40 +508,13 @@ if st.button("生成成果書"):
 
     }
 
-    # =========================
-    # 替換表格文字
-    # =========================
-
-    for table in doc.tables:
-
-        for row in table.rows:
-
-            for cell in row.cells:
-
-                for para in cell.paragraphs:
-
-                    for key, value in replace_map.items():
-
-                        if key in para.text:
-
-                            para.text = para.text.replace(
-                                key,
-                                value
-                            )
-
-                            for run in para.runs:
-
-                                run.font.name = "標楷體"
-
-                                run._element.rPr.rFonts.set(
-                                    qn("w:eastAsia"),
-                                    "標楷體"
-                                )
-
-                                run.font.size = Pt(11)
+    replace_text(
+        doc,
+        replace_map
+    )
 
     # =========================
-    # 插入圖片
+    # 圖片替換
     # =========================
 
     image_map = {
@@ -469,31 +531,10 @@ if st.button("生成成果書"):
 
     }
 
-    for table in doc.tables:
-
-        for row in table.rows:
-
-            for cell in row.cells:
-
-                cell_text = cell.text.strip()
-
-                for key, image_file in image_map.items():
-
-                    if key in cell_text:
-
-                        # 清空 cell
-                        cell.text = ""
-
-                        if image_file is not None:
-
-                            paragraph = cell.paragraphs[0]
-
-                            run = paragraph.add_run()
-
-                            run.add_picture(
-                                image_file,
-                                width=Inches(2.5)
-                            )
+    insert_images(
+        doc,
+        image_map
+    )
 
     # =========================
     # 輸出 Word
@@ -511,7 +552,5 @@ if st.button("生成成果書"):
         label="📥 下載成果書",
         data=output,
         file_name="成果書.docx",
-        mime=(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
