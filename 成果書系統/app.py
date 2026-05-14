@@ -123,10 +123,14 @@ chinese_numbers = {
 }
 
 # =========================
-# 生成按鈕
+# 生成成果書
 # =========================
 
 if st.button("生成成果書"):
+
+    # =========================
+    # 檢查檔案
+    # =========================
 
     if template_file is None:
 
@@ -139,7 +143,7 @@ if st.button("生成成果書"):
         st.stop()
 
     # =========================
-    # 讀取 Excel
+    # 讀取 Excel / CSV
     # =========================
 
     ext = os.path.splitext(
@@ -257,7 +261,7 @@ if st.button("生成成果書"):
             text_questions.append(col)
 
     # =========================
-    # 生成問卷分析
+    # 生成問卷分析結果
     # =========================
 
     result_text = ""
@@ -382,7 +386,7 @@ if st.button("生成成果書"):
     doc = Document(template_file)
 
     # =========================
-    # 替換文字
+    # 文字替換
     # =========================
 
     replace_map = {
@@ -414,6 +418,10 @@ if st.button("生成成果書"):
         "{{問卷分析結果}}": result_text,
 
     }
+
+    # =========================
+    # 替換表格文字
+    # =========================
 
     for table in doc.tables:
 
@@ -467,22 +475,25 @@ if st.button("生成成果書"):
 
             for cell in row.cells:
 
-                for para in cell.paragraphs:
+                cell_text = cell.text.strip()
 
-                    for key, image_file in image_map.items():
+                for key, image_file in image_map.items():
 
-                        if key in para.text:
+                    if key in cell_text:
 
-                            para.clear()
+                        # 清空 cell
+                        cell.text = ""
 
-                            if image_file is not None:
+                        if image_file is not None:
 
-                                run = para.add_run()
+                            paragraph = cell.paragraphs[0]
 
-                                run.add_picture(
-                                    image_file,
-                                    width=Inches(2.5)
-                                )
+                            run = paragraph.add_run()
+
+                            run.add_picture(
+                                image_file,
+                                width=Inches(2.5)
+                            )
 
     # =========================
     # 輸出 Word
